@@ -27,4 +27,4 @@ jobs:
         uses: tabbyml/pochi/packages/github-action@main
         env:
           POCHI_API_KEY: ${{ secrets.POCHI_API_KEY }}
-          POCHI_MODEL: openai/gpt-4o
+          POCHI_MODEL: openai/gpt-4.1
