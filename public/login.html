@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in — Lumina AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="login-page">
+
+<div class="login-card">
+
+  <!-- Logo -->
+  <div class="login-logo">
+    <div class="mark">
+      <svg viewBox="0 0 20 20">
+        <path d="M10 2l2.4 4.9 5.4.8-3.9 3.8.9 5.3L10 14.3l-4.8 2.5.9-5.3L2.2 7.7l5.4-.8z"/>
+      </svg>
+    </div>
+    <span class="wordmark">Lumina</span>
+  </div>
+
+  <!-- Heading -->
+  <h1 class="login-heading">Welcome back</h1>
+  <p class="login-sub">Sign in with your email to continue creating.</p>
+
+  <!-- Form -->
+  <form id="login-form" novalidate>
+    <label class="field-label" for="email-input">Email address</label>
+    <input
+      id="email-input"
+      type="email"
+      class="login-input"
+      placeholder="you@example.com"
+      autocomplete="email"
+      autofocus
+      required
+    />
+    <div class="login-error" id="login-error" aria-live="polite"></div>
+
+    <button type="submit" class="btn-login" id="login-btn">
+      <span id="btn-text">Continue</span>
+      <svg id="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 8h10M9 4l4 4-4 4"/>
+      </svg>
+      <span id="btn-spinner" class="hidden" style="width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;"></span>
+    </button>
+
+    <p class="login-hint">New here? Your account is created automatically.</p>
+  </form>
+
+  <div class="login-divider"></div>
+
+  <div class="login-footer">
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="#">Help</a>
+  </div>
+
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+const form    = document.getElementById('login-form');
+const input   = document.getElementById('email-input');
+const errEl   = document.getElementById('login-error');
+const btn     = document.getElementById('login-btn');
+const btnText = document.getElementById('btn-text');
+const btnArrow= document.getElementById('btn-arrow');
+const btnSpinner = document.getElementById('btn-spinner');
+
+function setLoading(on) {
+  btn.disabled = on;
+  btnText.textContent = on ? 'Signing in…' : 'Continue';
+  btnArrow.classList.toggle('hidden', on);
+  btnSpinner.classList.toggle('hidden', !on);
+}
+
+function showError(msg) {
+  errEl.textContent = msg;
+  input.style.borderColor = 'var(--red)';
+}
+
+function clearError() {
+  errEl.textContent = '';
+  input.style.borderColor = '';
+}
+
+input.addEventListener('input', clearError);
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearError();
+
+  const email = input.value.trim();
+  if (!email) { showError('Please enter your email address.'); return; }
+
+  setLoading(true);
+
+  try {
+    const res  = await fetch('/session/login', {
+      method:      'POST',
+      credentials: 'include',
+      headers:     { 'Content-Type': 'application/json' },
+      body:        JSON.stringify({ email }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      showError(data.error || 'Something went wrong. Please try again.');
+      return;
+    }
+
+    // Navigate to the redirect destination (onboarding or app)
+    window.location.href = data.redirect;
+
+  } catch (_) {
+    showError('Unable to connect. Check your connection and try again.');
+  } finally {
+    setLoading(false);
+  }
+});
+
+// Allow Enter key (already handled by form submit)
+</script>
+</body>
+</html>

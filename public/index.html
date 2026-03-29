@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acme SaaS — Onboarding Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    body {
+      background: radial-gradient(ellipse at 60% 20%, #eef2ff 0%, #f8fafc 50%, #fdf4ff 100%);
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <span class="logo-mark">
+      <svg viewBox="0 0 16 16"><path d="M8 2L14 5.5V10.5L8 14L2 10.5V5.5L8 2Z"/></svg>
+    </span>
+    Acme SaaS
+  </a>
+  <div class="navbar-links">
+    <a href="/admin">Admin</a>
+    <a href="/app">Product</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-logo">
+    <svg viewBox="0 0 16 16"><path d="M8 2L14 5.5V10.5L8 14L2 10.5V5.5L8 2Z"/></svg>
+  </div>
+
+  <h1>Onboarding &amp; Experimentation</h1>
+  <p>A production-grade onboarding system with deterministic rollout, variant assignment caching, and full audit logging.</p>
+
+  <div class="hero-cards">
+    <a href="/admin" class="hero-card">
+      <div class="hc-icon" style="background:var(--brand-light);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+      </div>
+      <h3>Admin Dashboard</h3>
+      <p>Configure onboarding flows, set rollout percentages, and monitor variant assignments across users.</p>
+    </a>
+
+    <a href="/app" class="hero-card">
+      <div class="hc-icon" style="background:#f0fdf4;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <h3>Product App</h3>
+      <p>Experience onboarding as a user — see how variant assignments affect the flow each user receives.</p>
+    </a>
+  </div>
+
+  <div style="margin-top:32px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; justify-content:center;">
+    <div style="display:flex; align-items:center; gap:7px; font-size:.8rem; color:var(--l-text-3);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="12" rx="10" ry="10"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+      SQLite persistence
+    </div>
+    <div style="display:flex; align-items:center; gap:7px; font-size:.8rem; color:var(--l-text-3);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Deterministic rollout bucketing
+    </div>
+    <div style="display:flex; align-items:center; gap:7px; font-size:.8rem; color:var(--l-text-3);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Full variant audit log
+    </div>
+    <div style="display:flex; align-items:center; gap:7px; font-size:.8rem; color:var(--l-text-3);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Stale cache bug simulation
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

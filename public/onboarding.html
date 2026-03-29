@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getting started — Lumina AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="ob-page">
+
+<!-- Top bar -->
+<header class="ob-topbar">
+  <div class="logo">
+    <div class="mark">
+      <svg viewBox="0 0 20 20"><path d="M10 2l2.4 4.9 5.4.8-3.9 3.8.9 5.3L10 14.3l-4.8 2.5.9-5.3L2.2 7.7l5.4-.8z"/></svg>
+    </div>
+    Lumina
+  </div>
+  <button class="skip-btn" id="skip-btn">Skip for now</button>
+</header>
+
+<!-- Main shell -->
+<div class="ob-shell" id="ob-shell">
+  <!-- Loading state -->
+  <div id="ob-loading" style="display:flex; align-items:center; justify-content:center; min-height:400px; gap:12px; color:var(--l-text-3); font-size:.9rem;">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="animation:spin .7s linear infinite;">
+      <circle cx="10" cy="10" r="8" stroke-dasharray="40" stroke-dashoffset="30"/>
+    </svg>
+    Loading your experience…
+  </div>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+// localStorage key prefix for the variant cache (written on every load from backend)
+const LS_PREFIX = 'lumina_ob_v_';
+
+// ── State ─────────────────────────────────────────────────────────────────
+let state = {
+  me:          null,
+  config:      null,   // { variant, steps, config_version }
+  steps:       [],
+  currentStep: 0,
+  answers:     {},     // stepId → selected value(s)
+};
+
+// ── Boot ──────────────────────────────────────────────────────────────────
+(async () => {
+  try {
+    // 1. Verify session
+    const meRes = await fetch('/session/me', { credentials: 'include' });
+    if (!meRes.ok) { window.location.href = '/login'; return; }
+    state.me = await meRes.json();
+
+    if (state.me.onboarding_completed) { window.location.href = '/app'; return; }
+
+    // 2. Fetch from backend (authoritative variant)
+    const obRes  = await fetch('/onboarding/for-user', { credentials: 'include' });
+    const obData = await obRes.json();
+
+    // 3. Always trust the backend — overwrite any stale localStorage cache.
+    //    The backend is authoritative for onboarding_variant; the cache is
+    //    only kept so that analytics / other code can read it client-side.
+    const cacheKey     = LS_PREFIX + state.me.id;
+    const variantToUse = obData.variant;
+    localStorage.setItem(cacheKey, String(obData.variant));
+
+    state.config = { ...obData, variant: variantToUse };
+    state.steps  = obData.steps;        // raw steps from backend
+    state.currentStep = 0;
+
+    render();
+  } catch (err) {
+    document.getElementById('ob-shell').innerHTML = `
+      <div style="text-align:center; padding:60px; color:var(--l-text-2);">
+        <p>Something went wrong. <a href="/login" style="color:var(--brand);">Sign in again</a></p>
+      </div>`;
+  }
+})();
+
+// ── Skip ──────────────────────────────────────────────────────────────────
+document.getElementById('skip-btn').addEventListener('click', completeOnboarding);
+
+// ── Render ────────────────────────────────────────────────────────────────
+function render() {
+  const shell = document.getElementById('ob-shell');
+  shell.innerHTML = `
+    ${buildProgress()}
+    <div class="ob-card">
+      <div class="ob-card-body" id="ob-body">
+        ${buildStep(state.currentStep)}
+      </div>
+      <div class="ob-card-footer">
+        <span class="ob-step-count">Step ${state.currentStep + 1} of ${state.steps.length}</span>
+        <div class="ob-btn-row">
+          ${state.currentStep > 0
+            ? `<button class="ob-btn ob-btn-secondary" id="btn-back">← Back</button>`
+            : ''}
+          <button class="ob-btn ob-btn-primary" id="btn-next" disabled>
+            ${state.currentStep === state.steps.length - 1 ? 'Get started →' : 'Continue →'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('btn-next')?.addEventListener('click', advance);
+  document.getElementById('btn-back')?.addEventListener('click', retreat);
+}
+
+// ── Progress bar ──────────────────────────────────────────────────────────
+function buildProgress() {
+  const variant = state.config.variant;
+  const steps   = state.steps;
+  let html = '<div class="ob-progress">';
+
+  steps.forEach((s, i) => {
+    const cls = i < state.currentStep ? 'done' : i === state.currentStep ? 'active' : '';
+    const label = s.id === 'use_case'    ? 'Purpose'
+                : s.id === 'category'   ? 'Category'
+                : s.id === 'inspiration'? 'Explore'
+                : s.id === 'defaults'   ? 'Style'
+                : `Step ${i+1}`;
+
+    html += `
+      <div class="ob-prog-step ${cls}">
+        <div class="circle">
+          ${i < state.currentStep
+            ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M2 6l2.5 2.5 5.5-5"/></svg>`
+            : i + 1}
+        </div>
+        <span class="dot-label">${label}</span>
+      </div>`;
+    if (i < steps.length - 1) {
+      html += `<div class="ob-prog-line ${i < state.currentStep ? 'filled' : ''}"></div>`;
+    }
+  });
+
+  return html + '</div>';
+}
+
+// ── Build step body (dispatches on variant + step type) ───────────────────
+function buildStep(idx) {
+  const step    = state.steps[idx];
+  const variant = state.config.variant;
+
+  let body = `
+    <h2 class="ob-step-title">${esc(step.title)}</h2>
+    <p class="ob-step-sub">${esc(step.subtitle || '')}</p>`;
+
+  switch (step.type) {
+    case 'radio':    body += buildRadio(step);    break;
+    case 'list':     body += buildList(step);     break;
+    case 'cards':    body += buildCards(step);    break;
+    case 'examples': body += buildExamples(step); break;
+    case 'guided':   body += buildGuided(step);   break;
+    default:         break;
+  }
+
+  return body;
+}
+
+// ── Variant 1: Radio ──────────────────────────────────────────────────────
+function buildRadio(step) {
+  const saved = state.answers[step.id];
+  return `<div class="radio-group">` +
+    step.options.map(opt => `
+      <label class="radio-opt ${saved === opt.value ? 'selected' : ''}"
+             data-step="${esc(step.id)}" data-value="${esc(opt.value)}">
+        <input type="radio" name="${esc(step.id)}" value="${esc(opt.value)}"
+               ${saved === opt.value ? 'checked' : ''} />
+        <div class="radio-dot"></div>
+        <div class="radio-text">
+          <div class="radio-label">${esc(opt.label)}</div>
+          ${opt.hint ? `<div class="radio-hint">${esc(opt.hint)}</div>` : ''}
+        </div>
+      </label>`
+    ).join('') + `</div>`;
+}
+
+// ── Variant 1: List ───────────────────────────────────────────────────────
+function buildList(step) {
+  const saved = state.answers[step.id];
+  return `<div class="list-group">` +
+    step.options.map(opt => `
+      <button class="list-opt ${saved === opt.value ? 'selected' : ''}"
+              data-step="${esc(step.id)}" data-value="${esc(opt.value)}">
+        ${esc(opt.label)}
+      </button>`
+    ).join('') + `</div>`;
+}
+
+// ── Variant 2: Cards ──────────────────────────────────────────────────────
+function buildCards(step) {
+  const saved = state.answers[step.id];
+  return `<div class="cards-grid">` +
+    step.options.map(opt => `
+      <button class="cat-card ${saved === opt.value ? 'selected' : ''}"
+              data-step="${esc(step.id)}" data-value="${esc(opt.value)}">
+        <span class="card-icon">${opt.icon}</span>
+        <span class="card-label">${esc(opt.label)}</span>
+        <span class="card-desc">${esc(opt.desc)}</span>
+      </button>`
+    ).join('') + `</div>`;
+}
+
+// ── Variant 2: Examples ───────────────────────────────────────────────────
+function buildExamples(step) {
+  // Mark examples step as auto-completed (informational only)
+  state.answers[step.id] = 'seen';
+  setTimeout(() => enableNext(), 0);
+
+  const icons = ['🎨', '🌸', '📦'];
+  return `<div class="examples-grid">` +
+    step.examples.map((ex, i) => `
+      <div class="example-item">
+        <div class="example-thumb">${icons[i] ?? '✨'}</div>
+        <div>
+          <span class="example-tag">${esc(ex.tag)}</span>
+          <p class="example-prompt">"${esc(ex.prompt)}"</p>
+        </div>
+      </div>`
+    ).join('') + `</div>`;
+}
+
+// ── Variant 2: Guided (tag chips) ─────────────────────────────────────────
+function buildGuided(step) {
+  const saved = state.answers[step.id] || {};
+  const sections = Object.entries(step.suggestions);
+
+  // Auto-enable since all fields are optional
+  state.answers[step.id] = saved;
+  setTimeout(() => enableNext(), 0);
+
+  return sections.map(([key, tags]) => `
+    <div class="guided-section">
+      <div class="guided-label">${esc(key.charAt(0).toUpperCase() + key.slice(1))}</div>
+      <div class="tag-row">
+        ${tags.map(tag => `
+          <button class="tag-chip ${saved[key] === tag ? 'selected' : ''}"
+                  data-guided-key="${esc(key)}" data-guided-val="${esc(tag)}"
+                  data-step="${esc(step.id)}">
+            ${esc(tag)}
+          </button>`
+        ).join('')}
+      </div>
+    </div>`
+  ).join('');
+}
+
+// ── Interaction delegation ────────────────────────────────────────────────
+document.addEventListener('click', (e) => {
+  // Radio option
+  const radioOpt = e.target.closest('.radio-opt');
+  if (radioOpt) {
+    const { step, value } = radioOpt.dataset;
+    document.querySelectorAll(`.radio-opt[data-step="${step}"]`).forEach(el => el.classList.remove('selected'));
+    radioOpt.classList.add('selected');
+    state.answers[step] = value;
+    enableNext();
+    return;
+  }
+
+  // List option
+  const listOpt = e.target.closest('.list-opt');
+  if (listOpt) {
+    const { step, value } = listOpt.dataset;
+    document.querySelectorAll(`.list-opt[data-step="${step}"]`).forEach(el => el.classList.remove('selected'));
+    listOpt.classList.add('selected');
+    state.answers[step] = value;
+    enableNext();
+    return;
+  }
+
+  // Category card
+  const catCard = e.target.closest('.cat-card');
+  if (catCard) {
+    const { step, value } = catCard.dataset;
+    document.querySelectorAll(`.cat-card[data-step="${step}"]`).forEach(el => el.classList.remove('selected'));
+    catCard.classList.add('selected');
+    state.answers[step] = value;
+    enableNext();
+    return;
+  }
+
+  // Tag chip
+  const chip = e.target.closest('.tag-chip');
+  if (chip) {
+    const { step, guidedKey, guidedVal } = chip.dataset;
+    document.querySelectorAll(`.tag-chip[data-guided-key="${guidedKey}"]`).forEach(el => el.classList.remove('selected'));
+    chip.classList.add('selected');
+    if (typeof state.answers[step] !== 'object') state.answers[step] = {};
+    state.answers[step][guidedKey] = guidedVal;
+    enableNext();
+    return;
+  }
+});
+
+function enableNext() {
+  const btn = document.getElementById('btn-next');
+  if (btn) btn.disabled = false;
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────
+function advance() {
+  const next = state.currentStep + 1;
+  if (next >= state.steps.length) { completeOnboarding(); return; }
+
+  const body = document.getElementById('ob-body');
+  body.classList.add('fading');
+  setTimeout(() => {
+    state.currentStep = next;
+    render();
+  }, 180);
+}
+
+function retreat() {
+  if (state.currentStep === 0) return;
+  const body = document.getElementById('ob-body');
+  body.classList.add('fading');
+  setTimeout(() => {
+    state.currentStep--;
+    render();
+  }, 180);
+}
+
+// ── Complete ──────────────────────────────────────────────────────────────
+async function completeOnboarding() {
+  const btn = document.getElementById('btn-next');
+  if (btn) { btn.disabled = true; btn.textContent = 'Setting up…'; }
+
+  try {
+    await fetch('/onboarding/complete', {
+      method:      'POST',
+      credentials: 'include',
+      headers:     { 'Content-Type': 'application/json' },
+    });
+    if (state.config && state.config.variant === 2) {
+      localStorage.setItem('lumina_labs', 'true');
+    }
+    window.location.href = '/app';
+  } catch (_) {
+    window.location.href = '/app';
+  }
+}
+
+// ── Escape HTML ───────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

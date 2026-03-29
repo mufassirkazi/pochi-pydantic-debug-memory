@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lumina AI — Image Generation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="app-page">
+
+<!-- ── Navbar ────────────────────────────────────────────────────────── -->
+<nav class="app-nav">
+  <a href="/app" class="logo">
+    <div class="mark">
+      <svg viewBox="0 0 20 20"><path d="M10 2l2.4 4.9 5.4.8-3.9 3.8.9 5.3L10 14.3l-4.8 2.5.9-5.3L2.2 7.7l5.4-.8z"/></svg>
+    </div>
+    Lumina
+  </a>
+
+  <div class="app-nav-center"></div>
+
+  <div class="app-nav-end">
+    <div class="credits-pill">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <path d="M6 1l1.2 2.4 2.7.4-1.95 1.9.46 2.65L6 7.15 3.57 8.41l.46-2.65L2.1 3.84l2.7-.4z"/>
+      </svg>
+      <span class="num" id="credits-num">50</span>
+      <span>credits</span>
+    </div>
+
+    <!-- User avatar + dropdown -->
+    <div style="position:relative;">
+      <button class="user-avatar-btn" id="user-btn" aria-label="Account menu">
+        <span id="user-initial">?</span>
+      </button>
+      <div class="user-menu-dropdown" id="user-menu">
+        <div class="user-menu-email" id="user-email-display">—</div>
+        <button class="user-menu-item" id="btn-logout">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Sign out
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Main ──────────────────────────────────────────────────────────── -->
+<div class="app-main">
+
+  <!-- Generation area -->
+  <section class="gen-area">
+
+    <!-- Image output -->
+    <div class="image-output" id="image-output">
+      <div class="image-placeholder" id="image-placeholder">
+        <div class="ph-icon">
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+        </div>
+        <h3>Your image will appear here</h3>
+        <p>Describe what you want to create and press Generate, or use <kbd style="font-family:inherit;padding:1px 5px;border:1px solid var(--d-border-2);border-radius:4px;font-size:.76rem;">⌘ Enter</kbd></p>
+      </div>
+    </div>
+
+    <!-- Prompt panel -->
+    <div class="prompt-panel">
+      <textarea
+        id="prompt-input"
+        class="prompt-textarea"
+        placeholder="Describe the image you want to create…"
+        maxlength="500"
+        rows="3"
+      ></textarea>
+      <div class="prompt-panel-footer">
+        <div class="style-row" id="style-row">
+          <!-- chips injected by JS -->
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
+          <span class="char-count" id="char-count">0 / 500</span>
+          <button class="btn-generate" id="btn-generate" disabled>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 18l-6.2 3 1.2-6.8L2 9.3l6.9-1z"/>
+            </svg>
+            Generate
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Sidebar — history -->
+  <aside class="app-sidebar">
+    <div class="sidebar-header">Recent creations</div>
+    <div id="history-container">
+      <div class="sidebar-empty" id="history-empty">
+        <svg width="36" height="36" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <p>Your generated images<br>will appear here</p>
+      </div>
+      <div class="history-grid hidden" id="history-grid"></div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────────
+   State
+   ───────────────────────────────────────────────────────────────────────── */
+let me            = null;
+let prefs         = null;
+let activeStyle   = null;
+let generating    = false;
+let creditsLeft   = 50;
+let sessionValid  = false;
+
+const STYLES = [
+  'Photorealistic',
+  'Digital art',
+  'Anime',
+  'Oil painting',
+  'Watercolor',
+  '3D render',
+];
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Helpers
+   ───────────────────────────────────────────────────────────────────────── */
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, duration = 2800) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Style chips
+   ───────────────────────────────────────────────────────────────────────── */
+function buildStyleChips() {
+  const row = document.getElementById('style-row');
+  row.innerHTML = STYLES.map(s => `
+    <button class="style-chip${s === activeStyle ? ' active' : ''}" data-style="${esc(s)}">${esc(s)}</button>
+  `).join('');
+}
+
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('.style-chip');
+  if (!chip) return;
+  const val = chip.dataset.style;
+  activeStyle = activeStyle === val ? null : val;
+  buildStyleChips();
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Prompt input
+   ───────────────────────────────────────────────────────────────────────── */
+const promptInput  = document.getElementById('prompt-input');
+const charCountEl  = document.getElementById('char-count');
+const generateBtn  = document.getElementById('btn-generate');
+
+promptInput.addEventListener('input', () => {
+  const len = promptInput.value.length;
+  charCountEl.textContent = `${len} / 500`;
+  charCountEl.className = 'char-count' + (len > 460 ? ' near' : '') + (len >= 500 ? ' limit' : '');
+  generateBtn.disabled = len === 0 || generating;
+});
+
+// ⌘ Enter / Ctrl + Enter shortcut
+promptInput.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    e.preventDefault();
+    if (!generateBtn.disabled) generateBtn.click();
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+   User menu
+   ───────────────────────────────────────────────────────────────────────── */
+const userBtn  = document.getElementById('user-btn');
+const userMenu = document.getElementById('user-menu');
+
+userBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  userMenu.classList.toggle('open');
+});
+
+document.addEventListener('click', () => userMenu.classList.remove('open'));
+
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  await fetch('/session/logout', { method: 'POST', credentials: 'include' });
+  window.location.href = '/login';
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Image generation
+   ───────────────────────────────────────────────────────────────────────── */
+document.addEventListener('lumina:generation-complete', (e) => {
+  if (!Number.isFinite(e.detail.remaining) || e.detail.remaining <= 0) {
+    promptInput.value = '';
+    promptInput.dispatchEvent(new Event('input'));
+  }
+});
+
+generateBtn.addEventListener('click', generate);
+
+async function generate() {
+  const prompt = promptInput.value.trim();
+  if (!prompt || generating || !sessionValid) return;
+
+  generating = true;
+  generateBtn.disabled = true;
+  generateBtn.innerHTML = `<span class="spinner"></span> Generating…`;
+
+  // Show shimmer
+  const output = document.getElementById('image-output');
+  output.innerHTML = `<div class="shimmer"></div>`;
+
+  try {
+    const res  = await fetch('/generate-image', {
+      method:      'POST',
+      credentials: 'include',
+      headers:     { 'Content-Type': 'application/json' },
+      body:        JSON.stringify({ prompt, style: activeStyle }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Generation failed');
+    }
+
+    const { imageUrl } = await res.json();
+
+    // Deduct credit only after a confirmed successful generation
+    creditsLeft = Math.max(0, creditsLeft - 1);
+    document.getElementById('credits-num').textContent = creditsLeft;
+
+    output.innerHTML = `
+        <img src="${esc(imageUrl)}" alt="${esc(prompt)}" id="gen-image" />
+        <div class="image-actions">
+          <button class="img-action-btn" id="btn-copy-prompt">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy prompt
+          </button>
+          <a class="img-action-btn" href="${esc(imageUrl)}" download="lumina.png" target="_blank">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download
+          </a>
+        </div>`;
+
+    document.getElementById('btn-copy-prompt')?.addEventListener('click', () => {
+      navigator.clipboard.writeText(prompt).then(() => showToast('Prompt copied'));
+    });
+
+    document.dispatchEvent(new CustomEvent('lumina:generation-complete', {
+      detail: { remaining: creditsLeft },
+    }));
+
+    // Refresh history
+    await loadHistory();
+
+  } catch (err) {
+    output.innerHTML = `
+      <div class="image-placeholder">
+        <div class="ph-icon" style="background:var(--red-bg);">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h3>Generation failed</h3>
+        <p>${esc(err.message)}</p>
+      </div>`;
+    showToast(err.message, 4000);
+  } finally {
+    generating = false;
+    generateBtn.disabled = promptInput.value.trim().length === 0;
+    generateBtn.innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 18l-6.2 3 1.2-6.8L2 9.3l6.9-1z"/>
+      </svg>
+      Generate`;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   History sidebar
+   ───────────────────────────────────────────────────────────────────────── */
+async function loadHistory() {
+  const res    = await fetch('/generate-image/history', { credentials: 'include' });
+  const { images } = await res.json();
+
+  const grid  = document.getElementById('history-grid');
+  const empty = document.getElementById('history-empty');
+
+  if (!images || images.length === 0) {
+    grid.classList.add('hidden');
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  // Sort images according to the user's preferred history order, falling back
+  // to newest-first when no preference has been set.
+  const toMs = (d) => (d ? new Date(d).getTime() : 0);
+  const sorted = [...images].sort((a, b) => {
+    const order = prefs && prefs.history_sort_order;
+    if (order === 'oldest') return toMs(a.created_at) - toMs(b.created_at);
+    if (order === 'prompt') return a.prompt.localeCompare(b.prompt);
+    return toMs(b.created_at) - toMs(a.created_at); // default: newest first
+  });
+
+  const _seen = new Set();
+  const deduped = sorted.filter(img => {
+    const k = img.prompt.trim().toLowerCase().slice(0, 64);
+    if (_seen.has(k)) return false;
+    _seen.add(k);
+    return true;
+  });
+
+  grid.classList.remove('hidden');
+  empty.classList.add('hidden');
+
+  grid.innerHTML = deduped.map(img => `
+    <div class="history-thumb" title="${esc(img.prompt)}" data-prompt="${esc(img.prompt)}">
+      <img src="${esc(img.imageUrl)}" alt="${esc(img.prompt)}" loading="lazy" />
+      <div class="thumb-overlay">
+        <span class="thumb-prompt">${esc(img.prompt)}</span>
+      </div>
+    </div>`
+  ).join('');
+
+  // Click thumbnail → fill prompt
+  grid.querySelectorAll('.history-thumb').forEach(thumb => {
+    thumb.addEventListener('click', () => {
+      promptInput.value = thumb.dataset.prompt;
+      promptInput.dispatchEvent(new Event('input'));
+      promptInput.focus();
+    });
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Boot
+   ───────────────────────────────────────────────────────────────────────── */
+(async () => {
+  const res = await fetch('/session/me', { credentials: 'include' });
+  if (!res.ok) { window.location.href = '/login'; return; }
+
+  me           = await res.json();
+  sessionValid = true;
+
+  fetch('/session/preferences', { credentials: 'include' })
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data) return;
+      prefs       = data;
+      creditsLeft = prefs.credits_balance - prefs.credits_used;
+      if (prefs.default_style) activeStyle = prefs.default_style;
+      if (localStorage.getItem('lumina_labs') === 'true') {
+        creditsLeft = creditsLeft + prefs.beta_credits;
+      }
+      document.getElementById('credits-num').textContent = creditsLeft;
+      buildStyleChips();
+    });
+
+  const _seen = localStorage.getItem('lmn_seen_' + me.id);
+  if (_seen) document.querySelector('.app-main')?.classList.add('layout-stable');
+  localStorage.setItem('lmn_seen_' + me.id, '1');
+
+  const _uxKey = 'lumina_ux_' + me.id;
+  const _uxRaw = localStorage.getItem(_uxKey);
+  if (_uxRaw) {
+    try {
+      const ux = JSON.parse(_uxRaw);
+      if (ux.lastStyle) activeStyle = ux.lastStyle;
+    } catch (_) {}
+  }
+
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'hidden' && me) {
+      localStorage.setItem(_uxKey, JSON.stringify({ lastStyle: activeStyle }));
+      return;
+    }
+    if (document.visibilityState === 'visible') {
+      sessionValid = false;
+      const r = await fetch('/session/me', { credentials: 'include' });
+      sessionValid = r.ok;
+    }
+  });
+
+  document.getElementById('user-initial').textContent = me.email.charAt(0).toUpperCase();
+  document.getElementById('user-email-display').textContent = me.email;
+
+  buildStyleChips();
+  await loadHistory();
+})();
+</script>
+</body>
+</html>

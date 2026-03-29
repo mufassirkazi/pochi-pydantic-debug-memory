@@ -1,0 +1,11 @@
+{
+  "mcp": {
+    "logfire": {
+      "type": "http",
+      "url": "https://logfire-us.pydantic.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer pylf_v2_us_678cbb74-44f9-4e10-8aa1-8f92acd6bf16_VRhn19zkRJshKX71ZtcZJ1yMWNvWGRYNSz0bHGTxWB8T"
+      }
+    }
+  }
+}

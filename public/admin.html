@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — Acme SaaS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <span class="logo-mark">
+      <svg viewBox="0 0 16 16"><path d="M8 2L14 5.5V10.5L8 14L2 10.5V5.5L8 2Z"/></svg>
+    </span>
+    Acme SaaS
+  </a>
+  <div class="navbar-links">
+    <a href="/admin" class="active">Admin</a>
+    <a href="/app">Product</a>
+  </div>
+  <div class="navbar-end">
+    <span class="badge badge-neutral" id="nav-version-badge">Loading…</span>
+  </div>
+</nav>
+
+<!-- ── Page ───────────────────────────────────────────────────────────── -->
+<div class="page-wrapper">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <h1>Onboarding Configuration</h1>
+    <p>Manage the active onboarding flow and rollout settings. Changes take effect immediately for new user sessions.</p>
+  </div>
+
+  <!-- KPI tiles -->
+  <div class="stat-grid" id="stat-grid">
+    <div class="stat-tile">
+      <div class="stat-label">Flow Version</div>
+      <div class="stat-value" id="stat-version">—</div>
+      <div class="stat-sub">Current live version</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-label">Rollout</div>
+      <div class="stat-value" id="stat-rollout">—</div>
+      <div class="stat-sub">% users in treatment</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-label">Total Steps</div>
+      <div class="stat-value" id="stat-steps">—</div>
+      <div class="stat-sub">In active flow</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-label">Last Updated</div>
+      <div class="stat-value" style="font-size:1rem;" id="stat-updated">—</div>
+      <div class="stat-sub">Flow update time</div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+
+    <!-- ── Left: Current flow preview ──────────────────────────────────── -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Live Onboarding Flow</h2>
+        <span class="badge badge-green" id="live-status">
+          <span class="dot"></span>Live
+        </span>
+      </div>
+      <div class="card-body">
+        <ul class="steps-preview" id="steps-preview">
+          <li style="justify-content:center; color:var(--text-3);">
+            <div class="spinner"></div>
+            &nbsp;Loading…
+          </li>
+        </ul>
+      </div>
+      <div class="card-footer">
+        <span class="text-xs text-muted font-mono" id="flow-meta">—</span>
+        <span class="badge badge-brand" id="rollout-badge">—% rollout</span>
+      </div>
+    </div>
+
+    <!-- ── Right: Edit form ─────────────────────────────────────────────── -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Edit Flow</h2>
+      </div>
+      <div class="card-body">
+
+        <div id="save-feedback" class="hidden"></div>
+
+        <div class="form-group">
+          <label>
+            Steps
+            <span class="label-hint">— JSON array of step objects</span>
+          </label>
+          <textarea id="steps-input" placeholder='[
+  { "step": 1, "id": "welcome", "title": "Welcome", "action": "continue" },
+  ...
+]'></textarea>
+        </div>
+
+        <div class="form-group" style="margin-top:18px;">
+          <label>
+            Rollout Percentage
+            <span class="label-hint">— % of users who receive treatment</span>
+          </label>
+          <div class="slider-row">
+            <input type="range" id="rollout-slider" min="0" max="100" value="50" />
+            <span class="slider-value" id="rollout-display">50%</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:4px;">
+            <span class="text-xs text-muted">0% — all users see control</span>
+            <span class="text-xs text-muted">100% — all users see treatment</span>
+          </div>
+        </div>
+
+        <div class="alert alert-warning mt-16" style="font-size:.8rem;">
+          <svg class="alert-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M8 1L15 14H1L8 1Z"/><line x1="8" y1="6" x2="8" y2="9"/><circle cx="8" cy="11.5" r=".5" fill="currentColor"/>
+          </svg>
+          <span>Saving will increment the flow version but <strong>will not reset</strong> existing user variant assignments. Users already in the experiment keep their cached variant.</span>
+        </div>
+
+      </div>
+      <div class="card-footer">
+        <span class="text-xs text-muted" id="save-hint">All changes are published immediately.</span>
+        <button class="btn btn-primary" id="save-btn">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7l3.5 3.5L12 3"/></svg>
+          Save Changes
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /grid -->
+
+  <!-- ── Users table ──────────────────────────────────────────────────── -->
+  <div class="card" style="margin-top:24px;">
+    <div class="card-header">
+      <h2>Users &amp; Variant Assignments</h2>
+      <span class="text-xs text-muted">Stale = assigned on a previous flow version</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <table id="users-table" style="width:100%; border-collapse:collapse; font-size:.875rem;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border); background:var(--surface-2);">
+            <th style="padding:11px 20px; text-align:left; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--text-3);">User</th>
+            <th style="padding:11px 16px; text-align:left; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--text-3);">Segment</th>
+            <th style="padding:11px 16px; text-align:left; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--text-3);">Variant</th>
+            <th style="padding:11px 16px; text-align:left; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--text-3);">Cache Status</th>
+            <th style="padding:11px 16px; text-align:left; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--text-3);">Assigned</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody">
+          <tr><td colspan="5" class="loading-shell">
+            <div class="spinner"></div> Loading users…
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page-wrapper -->
+
+<script>
+const API = '';
+
+// ── Helpers ─────────────────────────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+function fmt(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+// ── Load current flow ────────────────────────────────────────────────────
+let currentSteps = [];
+let currentRollout = 50;
+
+async function loadFlow() {
+  const res  = await fetch(`${API}/onboarding/current`);
+  const data = await res.json();
+  const flow = data.flow;
+  currentRollout = flow.rollout_percentage;
+  currentSteps   = flow.steps;
+
+  el('stat-version').textContent  = `v${flow.version}`;
+  el('stat-rollout').textContent  = `${flow.rollout_percentage}%`;
+  el('stat-steps').textContent    = flow.steps.length;
+  el('stat-updated').textContent  = fmt(flow.updated_at);
+  el('nav-version-badge').textContent = `Flow v${flow.version}`;
+  el('flow-meta').textContent     = `version ${flow.version} · updated ${fmt(flow.updated_at)}`;
+  el('rollout-badge').textContent = `${flow.rollout_percentage}% rollout`;
+
+  // Slider sync
+  el('rollout-slider').value = flow.rollout_percentage;
+  el('rollout-display').textContent = `${flow.rollout_percentage}%`;
+
+  renderStepsPreview(flow.steps);
+  el('steps-input').value = JSON.stringify(flow.steps, null, 2);
+}
+
+function renderStepsPreview(steps) {
+  if (!steps || steps.length === 0) {
+    el('steps-preview').innerHTML = '<li style="color:var(--text-3);">No steps configured.</li>';
+    return;
+  }
+  el('steps-preview').innerHTML = steps.map(s => `
+    <li>
+      <span class="step-num">${s.step}</span>
+      <span class="step-title">${escHtml(s.title || s.id)}</span>
+      <span class="step-action">${escHtml(s.action || '')}</span>
+    </li>
+  `).join('');
+  el('stat-steps').textContent = steps.length;
+}
+
+// ── Load users table ─────────────────────────────────────────────────────
+async function loadUsers() {
+  const res  = await fetch(`${API}/users`);
+  const data = await res.json();
+
+  if (!data.users) return;
+
+  const flowVer = data.current_flow_version;
+  el('stat-version').textContent = `v${flowVer}`;
+  el('nav-version-badge').textContent = `Flow v${flowVer}`;
+  el('flow-meta').textContent = `version ${flowVer}`;
+
+  el('users-tbody').innerHTML = data.users.map(u => {
+    const variantBadge = u.assigned_variant
+      ? (u.assigned_variant === 'treatment'
+          ? `<span class="badge badge-brand">${u.assigned_variant}</span>`
+          : `<span class="badge badge-neutral">${u.assigned_variant}</span>`)
+      : `<span class="badge badge-neutral">unassigned</span>`;
+
+    const staleBadge = !u.assigned_variant
+      ? `<span class="badge badge-neutral">—</span>`
+      : u.cache_stale
+      ? `<span class="badge badge-amber"><span class="dot"></span>Stale cache</span>`
+      : `<span class="badge badge-green"><span class="dot"></span>Current</span>`;
+
+    const segColor = {new:'badge-brand', power:'badge-amber', enterprise:'badge-green'}[u.segment] || 'badge-neutral';
+
+    return `
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:12px 20px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="user-avatar" style="width:30px;height:30px;font-size:.75rem;">${u.name.charAt(0)}</div>
+            <div>
+              <div style="font-weight:600;">${escHtml(u.name)}</div>
+              <div class="text-xs text-muted font-mono">${escHtml(u.id)}</div>
+            </div>
+          </div>
+        </td>
+        <td style="padding:12px 16px;"><span class="badge ${segColor}">${escHtml(u.segment)}</span></td>
+        <td style="padding:12px 16px;">${variantBadge}</td>
+        <td style="padding:12px 16px;">${staleBadge}</td>
+        <td style="padding:12px 16px; color:var(--text-3); font-size:.82rem;">${fmt(u.assigned_at)}</td>
+      </tr>`;
+  }).join('');
+}
+
+// ── Rollout slider ────────────────────────────────────────────────────────
+el('rollout-slider').addEventListener('input', e => {
+  el('rollout-display').textContent = `${e.target.value}%`;
+});
+
+// ── Save handler ──────────────────────────────────────────────────────────
+el('save-btn').addEventListener('click', async () => {
+  const btn = el('save-btn');
+  const fb  = el('save-feedback');
+
+  let steps;
+  try {
+    steps = JSON.parse(el('steps-input').value);
+  } catch (_) {
+    fb.className = 'alert alert-error mt-16';
+    fb.innerHTML = `<span class="alert-icon">✕</span> Invalid JSON in steps field. Please check the syntax and try again.`;
+    return;
+  }
+
+  if (!Array.isArray(steps) || steps.length === 0) {
+    fb.className = 'alert alert-error mt-16';
+    fb.innerHTML = `<span class="alert-icon">✕</span> Steps must be a non-empty array.`;
+    return;
+  }
+
+  const rolloutPct = parseInt(el('rollout-slider').value, 10);
+
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> Saving…`;
+  fb.className = 'hidden';
+
+  try {
+    const res  = await fetch(`${API}/onboarding/update`, {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({ steps, rollout_percentage: rolloutPct }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'Unknown error');
+
+    fb.className = 'alert alert-success mt-16';
+    fb.innerHTML = `
+      <svg class="alert-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8l4 4 8-8"/></svg>
+      <span>Flow updated to <strong>version ${data.flow.version}</strong>. Changes are now live for new user sessions.</span>`;
+
+    el('save-hint').textContent = `Last saved at ${new Date().toLocaleTimeString()}`;
+
+    // Refresh stats
+    await Promise.all([loadFlow(), loadUsers()]);
+
+  } catch (err) {
+    fb.className = 'alert alert-error mt-16';
+    fb.innerHTML = `<span class="alert-icon">✕</span> ${escHtml(err.message)}`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7l3.5 3.5L12 3"/></svg> Save Changes`;
+  }
+});
+
+// ── Escape HTML ───────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+(async () => {
+  await Promise.all([loadFlow(), loadUsers()]);
+})();
+</script>
+</body>
+</html>
