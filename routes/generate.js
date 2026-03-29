@@ -19,7 +19,6 @@
 "use strict";
 
 const { Router } = require("express");
-const https      = require("https");
 const { stmts }  = require("../db");
 const log        = require("../lib/logger");
 
@@ -118,16 +117,24 @@ router.get("/history", (req, res) => {
   const requestId = log.requestId();
   const rows      = stmts.getUserImages.all(userId);
 
+  // Remap snake_case DB column → camelCase for the frontend
+  const images = rows.map(r => ({
+    id:        r.id,
+    prompt:    r.prompt,
+    style:     r.style,
+    imageUrl:  r.image_url,
+    createdAt: r.created_at,
+  }));
+
   log.event("history_fetched", {
     request_id:  requestId,
     user_id:     userId,
-    image_count: rows.length,
-    fields:      rows.length > 0 ? Object.keys(rows[0]) : [],
-    sample_url:  rows[0]?.image_url ?? null,
+    image_count: images.length,
+    sample_url:  images[0]?.imageUrl ?? null,
     status:      "ok",
   });
 
-  res.json({ images: rows });
+  res.json({ images });
 });
 
 module.exports = router;
