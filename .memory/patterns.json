@@ -1,0 +1,16 @@
+{
+  "patterns": [
+    {
+      "id": "prevent-duplicate-generation-requests",
+      "problem": "Repeated clicks on the generate button created multiple image generation requests.",
+      "root_cause": "The generate button was only disabled after the fetch resolved enough to confirm the request was in-flight, leaving a window where multiple clicks could dispatch multiple requests.",
+      "solution": "Lock the generate handler and disable the button immediately before sending the request; remove redundant re-binding of the click handler during history renders.",
+      "why_it_works": "Disabling the button before the network call closes the click window entirely, and removing rebinds prevents multiple handlers from being attached over time.",
+      "source": {
+        "type": "pr",
+        "id": 11,
+        "title": "Prevent duplicate image generation requests"
+      }
+    }
+  ]
+}
