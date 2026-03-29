@@ -45,7 +45,7 @@ jobs:
             echo "should_run=false" >> $GITHUB_OUTPUT
           fi
         env:
-          GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN_PYDANTIC }}
 
       # 🚀 Trigger learning AFTER merge
       - name: Trigger pochi for learning
@@ -54,7 +54,7 @@ jobs:
           gh pr comment ${{ github.event.pull_request.number }} \
             --body "/pochi use the lumina-support skill and analyze this merged PR and store a reusable pattern in .memory/patterns.json"
         env:
-          GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN_PYDANTIC }}
 
       # 🧠 Normal pochi execution
       - name: Run pochi
@@ -62,6 +62,6 @@ jobs:
         uses: tabbyml/pochi/packages/github-action@main
         env:
           env:
-          GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN_PYDANTIC }} 
           POCHI_API_KEY: ${{ secrets.POCHI_API_KEY }}
           POCHI_MODEL: openai/gpt-5.2-codex
