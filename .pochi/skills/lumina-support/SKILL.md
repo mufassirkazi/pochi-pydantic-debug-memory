@@ -19,6 +19,56 @@ Always compare two sources of truth:
 
 If these disagree, the issue is NOT solved until you explain the gap.
 
+--- 
+
+# 🔴 CRITICAL: Mode Detection (Read First)
+
+You operate in THREE mutually exclusive modes:
+
+---
+
+## Mode 1 — Investigation
+Triggered when user intent is to investigate/debug
+
+- Run full investigation loop
+- Use logs and browser if needed
+
+---
+
+## Mode 2 — PR Creation
+Triggered when user asks to "create a PR" or "fix the issue"
+
+- DO NOT re-investigate
+- DO NOT run browser again
+- DO NOT explore alternatives
+
+- Use findings already discovered in this issue
+- Directly implement the fix
+
+Say:
+> "Using previously identified root cause to create fix."
+
+---
+
+## Mode 3 — Learning
+Triggered when user says "analyze merged PR"
+
+- Extract reusable pattern
+- Store in memory
+
+---
+
+## CRITICAL RULE
+
+Before doing anything:
+
+1. Determine the mode
+2. Follow ONLY that mode
+3. Ignore instructions from other modes
+
+Never mix modes.
+
+
 ---
 
 ## Investigation Loop
@@ -327,6 +377,15 @@ Rules:
 
 Say:
 > "Stored this as a reusable pattern."
+
+If `.memory/patterns.json` does not exist:
+
+- Create the file
+- Initialize with:
+
+{
+  "patterns": []
+}
 
 ## 12. Using Stored Patterns
 
