@@ -350,42 +350,49 @@ When analyzing a merged pull request:
 Say:
 > "This fix has been merged. Extracting a reusable pattern."
 
-## 11. Persist Learned Patterns
+## 11. Persist Learned Patterns (Strict)
 
-When extracting patterns from a merged PR:
+When a pattern is extracted from a merged PR:
 
-- Save the pattern to `.memory/patterns.json`
+### Step 1 — Ensure storage exists
 
-Structure:
-
-{
-  "patterns": [
-    {
-      "problem": "",
-      "root_cause": "",
-      "solution": "",
-      "why_it_works": ""
-    }
-  ]
-}
-
-Rules:
-
-- Append new patterns (DO NOT overwrite existing ones)
-- Ensure patterns are concise and reusable
-- Avoid duplication if a similar pattern already exists
-
-Say:
-> "Stored this as a reusable pattern."
-
-If `.memory/patterns.json` does not exist:
-
-- Create the file
-- Initialize with:
+* If `.memory/` does not exist → create it
+* If `.memory/patterns.json` does not exist → create it with:
 
 {
-  "patterns": []
+"patterns": []
 }
+
+---
+
+### Step 2 — Write pattern
+
+* Append the new pattern to `.memory/patterns.json`
+
+---
+
+### Step 3 — Persist to repository (MANDATORY)
+
+You MUST run:
+
+* git add .memory/patterns.json
+* git commit -m "chore: store reusable debug pattern"
+* git push
+
+---
+
+### Rules
+
+* Do NOT claim a pattern is stored unless the file exists in the repo
+* Do NOT skip git commit/push
+* If any step fails, report failure explicitly
+
+---
+
+Say ONLY after success:
+
+> "Stored this as a reusable pattern and committed it to the repository."
+
 
 ## 12. Using Stored Patterns
 
