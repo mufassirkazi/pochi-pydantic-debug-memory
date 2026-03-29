@@ -119,6 +119,11 @@ Inspect:
 * cookies
 * runtime values (if relevant)
 
+When using the browser agent:
+
+- Navigate directly to the relevant page where the issue occurs (e.g. /app)
+- Focus ONLY on reproducing the reported issue.
+
 ---
 
 ### Browser Prompt Template
