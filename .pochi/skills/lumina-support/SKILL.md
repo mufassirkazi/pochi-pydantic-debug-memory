@@ -275,22 +275,71 @@ When investigating new issues:
 Say:
 > "This appears similar to a previously resolved issue. The solution that worked there was X."
 
-## 10. Automatic Learning on PR Merge
+## 10. Learning from Merged PRs (Triggered)
 
-When a pull request is merged:
+IMPORTANT:
 
-- Identify the related issue (if any)
-- Analyze:
-  - the problem that was being solved
-  - the solution implemented in the PR
-  - why this solution is effective
+This step ONLY runs when explicitly instructed (e.g. "analyze this merged PR").
+
+When analyzing a merged pull request:
+
+- Identify:
+  - The problem being solved
+  - The root cause
+  - The solution implemented
+  - Why this solution was chosen over alternatives
+
+- Treat this as a confirmed, production-grade fix
 
 - Extract a reusable pattern:
   - problem type
   - root cause
   - preferred solution
-
-- Store this as a reusable pattern for future debugging
+  - why it works
 
 Say:
-> "This fix has been merged. Storing this as a reusable solution pattern."
+> "This fix has been merged. Extracting a reusable pattern."
+
+## 11. Persist Learned Patterns
+
+When extracting patterns from a merged PR:
+
+- Save the pattern to `.memory/patterns.json`
+
+Structure:
+
+{
+  "patterns": [
+    {
+      "problem": "",
+      "root_cause": "",
+      "solution": "",
+      "why_it_works": ""
+    }
+  ]
+}
+
+Rules:
+
+- Append new patterns (DO NOT overwrite existing ones)
+- Ensure patterns are concise and reusable
+- Avoid duplication if a similar pattern already exists
+
+Say:
+> "Stored this as a reusable pattern."
+
+## 12. Using Stored Patterns
+
+Before investigating any new issue:
+
+- Read `.memory/patterns.json`
+- Look for similar previously solved problems
+
+If a strong match is found:
+
+- Prefer the previously validated solution
+- Do NOT re-explore all alternatives
+- Clearly explain the connection
+
+Say:
+> "This matches a previously solved pattern. Applying the known solution."
