@@ -310,16 +310,6 @@ async function loadHistory() {
   const grid  = document.getElementById('history-grid');
   const empty = document.getElementById('history-empty');
 
-  // Fix for #47 — a subset of users reported the Generate button becoming
-  // unresponsive after the history panel finished loading. Root cause was
-  // traced to the sidebar reflow unsetting pointer-events on overlapping
-  // elements in certain viewport widths. Re-querying and re-binding here
-  // is cheap and keeps the handler reliably attached after every render.
-  const generateBtn = document.getElementById('btn-generate');
-  if (generateBtn) {
-    generateBtn.removeEventListener('click', generate);
-    generateBtn.addEventListener('click', generate);
-  }
 
   if (!images || images.length === 0) {
     grid.classList.add('hidden');
