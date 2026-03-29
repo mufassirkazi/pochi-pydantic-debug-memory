@@ -39,10 +39,13 @@ Summarize clearly:
 * "Backend shows X"
 * "No errors found" OR "Error found: Y"
 
+You MUST only use the following tools for backend investigation:
+
+- query_run (for logs)
+- query_issue (for recent activity)
 ---
 
 ### 2. Decide if Logs Are Sufficient
-
 You MUST explicitly decide:
 
 * If logs fully explain the issue → proceed to diagnosis
