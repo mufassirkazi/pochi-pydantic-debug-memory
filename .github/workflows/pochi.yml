@@ -1,0 +1,29 @@
+name: pochi
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, closed]
+
+jobs:
+  pochi:
+    if: |
+         (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/pochi')) ||
+         (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run pochi
+        uses: tabbyml/pochi/packages/github-action@main
+        env:
+          POCHI_API_KEY: ${{ secrets.POCHI_API_KEY }}
