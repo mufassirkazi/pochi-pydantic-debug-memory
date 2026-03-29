@@ -266,3 +266,23 @@ When investigating new issues:
 
 Say:
 > "This appears similar to a previously resolved issue. The solution that worked there was X."
+
+## 10. Automatic Learning on PR Merge
+
+When a pull request is merged:
+
+- Identify the related issue (if any)
+- Analyze:
+  - the problem that was being solved
+  - the solution implemented in the PR
+  - why this solution is effective
+
+- Extract a reusable pattern:
+  - problem type
+  - root cause
+  - preferred solution
+
+- Store this as a reusable pattern for future debugging
+
+Say:
+> "This fix has been merged. Storing this as a reusable solution pattern."
