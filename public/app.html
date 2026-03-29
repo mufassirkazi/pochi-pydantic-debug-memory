@@ -229,6 +229,8 @@ async function generate() {
   const prompt = promptInput.value.trim();
   if (!prompt || generating || !sessionValid) return;
 
+  generating = true;
+  generateBtn.disabled = true;
   generateBtn.innerHTML = `<span class="spinner"></span> Generating…`;
 
   const output = document.getElementById('image-output');
@@ -241,10 +243,6 @@ async function generate() {
       headers:     { 'Content-Type': 'application/json' },
       body:        JSON.stringify({ prompt, style: activeStyle }),
     });
-
-    // Lock the button once we have confirmation the request is in-flight.
-    generating = true;
-    generateBtn.disabled = true;
 
     if (!res.ok) {
       const err = await res.json();
@@ -311,14 +309,6 @@ async function loadHistory() {
 
   const grid  = document.getElementById('history-grid');
   const empty = document.getElementById('history-empty');
-
-  // Fix for #47 — a subset of users reported the Generate button becoming
-  // unresponsive after the history panel finished loading. Root cause was
-  // traced to the sidebar reflow unsetting pointer-events on overlapping
-  // elements in certain viewport widths. Re-querying and re-binding here
-  // is cheap and keeps the handler reliably attached after every render.
-  document.getElementById('btn-generate')
-    ?.addEventListener('click', () => generate());
 
   if (!images || images.length === 0) {
     grid.classList.add('hidden');
